@@ -225,7 +225,10 @@ export const getStocksDetails = cache(async (symbol: string) => {
   if (!token) {
     throw new Error('FINNHUB API key is not configured');
   }
-  console.log('Finnhub token in getStocksDetails:', NEXT_PUBLIC_FINNHUB_API_KEY);
+  // console.log(
+  //  'Finnhub token in getStocksDetails:',
+  //  process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY
+  //);
 
   try {
     const [quote, profile, financials] = await Promise.all([
