@@ -1,12 +1,8 @@
-import { notFound } from 'next/navigation';
 import { WatchlistItem } from '@/database/models/watchlist.model';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import WatchlistButton from '@/components/WatchlistButton';
-
-// ✅ 這兩行很重要，一定要存在
 import { getStocksDetails } from '@/lib/actions/finnhub.actions';
 import { getUserWatchlist } from '@/lib/actions/watchlist.actions';
-
 import {
   SYMBOL_INFO_WIDGET_CONFIG,
   CANDLE_CHART_WIDGET_CONFIG,
@@ -19,7 +15,8 @@ import {
 export default async function StockDetails({ params }: StockDetailsPageProps) {
   const { symbol } = params;
   const upperSymbol = symbol.toUpperCase();
-  const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
+  const scriptUrl =
+    'https://s3.tradingview.com/external-embedding/embed-widget-';
 
   const stockData = await getStocksDetails(upperSymbol);
   const watchlist = await getUserWatchlist();
@@ -28,37 +25,12 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     (item: WatchlistItem) => item.symbol === upperSymbol,
   );
 
-  // 無資料時的 fallback 畫面
-  if (!stockData) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="max-w-xl text-center space-y-4">
-          <h1 className="text-2xl font-semibold">
-            No market data available for {upperSymbol}
-          </h1>
-          <p className="text-muted-foreground">
-            Your current data provider does not grant access to this symbol.
-            You can still keep it in your watchlist, but price and metrics
-            will not be shown.
-          </p>
-          <div className="flex justify-center">
-            <WatchlistButton
-              symbol={upperSymbol}
-              company={upperSymbol}
-              isInWatchlist={isInWatchlist}
-              type="button"
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const hasData = Boolean(stockData);
 
-  // 有資料時顯示完整詳情頁
   return (
     <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-        {/* Left column */}
+        {/* Left column: TradingView charts & info – always rendered */}
         <div className="flex flex-col gap-6">
           <TradingViewWidget
             scriptUrl={`${scriptUrl}symbol-info.js`}
@@ -81,36 +53,47 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
           />
         </div>
 
-        {/* Right column */}
+        {/* Right column: watchlist + fundamentals / fallback */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <WatchlistButton
               symbol={upperSymbol}
-              company={stockData.company}
+              company={stockData?.company ?? upperSymbol}
               isInWatchlist={isInWatchlist}
               type="button"
             />
           </div>
 
-          <TradingViewWidget
-            scriptUrl={`${scriptUrl}technical-analysis.js`}
-            config={TECHNICAL_ANALYSIS_WIDGET_CONFIG(upperSymbol)}
-            height={400}
-          />
+          {hasData ? (
+            <>
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}technical-analysis.js`}
+                config={TECHNICAL_ANALYSIS_WIDGET_CONFIG(upperSymbol)}
+                height={400}
+              />
 
-          <TradingViewWidget
-            scriptUrl={`${scriptUrl}company-profile.js`}
-            config={COMPANY_PROFILE_WIDGET_CONFIG(upperSymbol)}
-            height={440}
-          />
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}company-profile.js`}
+                config={COMPANY_PROFILE_WIDGET_CONFIG(upperSymbol)}
+                height={440}
+              />
 
-          <TradingViewWidget
-            scriptUrl={`${scriptUrl}financials.js`}
-            config={COMPANY_FINANCIALS_WIDGET_CONFIG(upperSymbol)}
-            height={464}
-          />
-        </div>
-      </section>
-    </div>
-  );
-}
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}financials.js`}
+                config={COMPANY_FINANCIALS_WIDGET_CONFIG(upperSymbol)}
+                height={464}
+              />
+            </>
+          ) : (
+            <div className="border rounded-lg p-4 space-y-2">
+              <h2 className="text-lg font-semibold">
+                Limited data for {upperSymbol}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Finnhub does not provide fundamentals for this symbol on your
+                current plan, but the TradingView charts on the left should
+                still display normally.
+              </p>
+            </div>
+          )}
+        </di
