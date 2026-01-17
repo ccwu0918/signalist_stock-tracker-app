@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { Star } from 'lucide-react';
 import { searchStocks } from '@/lib/actions/finnhub.actions';
 import SearchCommand from '@/components/SearchCommand';
