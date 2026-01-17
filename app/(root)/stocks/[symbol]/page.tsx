@@ -1,9 +1,6 @@
 import { Suspense } from 'react';
 import { getStockDetails } from '@/lib/actions/finnhub';
 import { formatPrice, formatPercentage } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import WatchlistButton from '@/components/WatchlistButton';
 import InvestingWidget from '@/components/InvestingWidget';
 
@@ -35,9 +32,9 @@ export default async function StockPage({ params }: StockPageProps) {
             <p className="text-muted-foreground text-lg">{stockData.name}</p>
           )}
           {stockData.exchange && (
-            <Badge variant="secondary" className="mt-2">
+            <span className="inline-block bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm mt-2">
               {stockData.exchange}
-            </Badge>
+            </span>
           )}
         </div>
         <div className="text-right">
@@ -54,97 +51,69 @@ export default async function StockPage({ params }: StockPageProps) {
       </div>
 
       {hasLimitedData && (
-        <Card className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-          <CardContent className="pt-6">
-            <p className="text-sm text-blue-900 dark:text-blue-100">
-              <strong>Limited data for {upperSymbol}.</strong> Finnhub does not provide fundamentals for this symbol on your current plan,
-              but charts are provided by Investing.com for Taiwan stocks.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="mb-6 border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 rounded-lg p-4">
+          <p className="text-sm text-blue-900 dark:text-blue-100">
+            <strong>Limited data for {upperSymbol}.</strong> Finnhub does not provide fundamentals for this symbol on your current plan,
+            but charts are provided by Investing.com for Taiwan stocks.
+          </p>
+        </div>
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
         {stockData.previousClose !== null && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Previous Close</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CardTitle>{formatPrice(stockData.previousClose)}</CardTitle>
-            </CardContent>
-          </Card>
+          <div className="border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-2">Previous Close</p>
+            <p className="text-2xl font-bold">{formatPrice(stockData.previousClose)}</p>
+          </div>
         )}
         {stockData.open !== null && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Open</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CardTitle>{formatPrice(stockData.open)}</CardTitle>
-            </CardContent>
-          </Card>
+          <div className="border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-2">Open</p>
+            <p className="text-2xl font-bold">{formatPrice(stockData.open)}</p>
+          </div>
         )}
         {stockData.high !== null && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Day High</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CardTitle>{formatPrice(stockData.high)}</CardTitle>
-            </CardContent>
-          </Card>
+          <div className="border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-2">Day High</p>
+            <p className="text-2xl font-bold">{formatPrice(stockData.high)}</p>
+          </div>
         )}
         {stockData.low !== null && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardDescription>Day Low</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <CardTitle>{formatPrice(stockData.low)}</CardTitle>
-            </CardContent>
-          </Card>
+          <div className="border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-2">Day Low</p>
+            <p className="text-2xl font-bold">{formatPrice(stockData.low)}</p>
+          </div>
         )}
       </div>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Price Chart</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Suspense fallback={<Skeleton className="w-full h-[500px]" />}>
-            {isTaiwanStock ? (
-              <InvestingWidget symbol={upperSymbol} />
-            ) : (
-              <div className="text-center p-6 text-muted-foreground">
-                Chart widget for non-Taiwan stocks coming soon
-              </div>
-            )}
-          </Suspense>
-        </CardContent>
-      </Card>
+      <div className="border rounded-lg p-6 mb-6">
+        <h2 className="text-xl font-bold mb-4">Price Chart</h2>
+        <Suspense fallback={
+          <div className="w-full h-[500px] bg-muted rounded-lg animate-pulse" />
+        }>
+          {isTaiwanStock ? (
+            <InvestingWidget symbol={upperSymbol} />
+          ) : (
+            <div className="text-center p-6 text-muted-foreground">
+              Chart widget for non-Taiwan stocks coming soon
+            </div>
+          )}
+        </Suspense>
+      </div>
 
       {(stockData.marketCap || stockData.peRatio) && (
         <div className="grid gap-6 md:grid-cols-2">
           {stockData.marketCap && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>Market Cap</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CardTitle>{formatPrice(stockData.marketCap)}</CardTitle>
-              </CardContent>
-            </Card>
+            <div className="border rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-2">Market Cap</p>
+              <p className="text-2xl font-bold">{formatPrice(stockData.marketCap)}</p>
+            </div>
           )}
           {stockData.peRatio && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription>P/E Ratio</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CardTitle>{stockData.peRatio.toFixed(2)}</CardTitle>
-              </CardContent>
-            </Card>
+            <div className="border rounded-lg p-4">
+              <p className="text-sm text-muted-foreground mb-2">P/E Ratio</p>
+              <p className="text-2xl font-bold">{stockData.peRatio.toFixed(2)}</p>
+            </div>
           )}
         </div>
       )}
