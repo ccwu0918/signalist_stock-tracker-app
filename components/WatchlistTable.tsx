@@ -73,6 +73,6 @@ export function WatchlistTable({ watchlist }: WatchlistTableProps) {
           ))}
         </TableBody>
       </Table>
-   </>
-
+    </>
+  );
 }
