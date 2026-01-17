@@ -123,13 +123,42 @@ export const getWatchlistWithData = async () => {
 
     if (watchlist.length === 0) return [];
 
-    const stocksWithData = await Promise.all(
+     const stocksWithData = await Promise.all(
       watchlist.map(async (item) => {
-        const stockData = await getStocksDetails(item.symbol);
+        const symbol = String(item.symbol).toUpperCase();
+
+        // ✅ 對 .TW 結尾的台股、台灣 ETF 先特別處理，避免 Finnhub 403 打爆整個列表
+        if (symbol.endsWith('.TW')) {
+          console.warn(
+            `No Finnhub access for TW symbol on current plan: ${symbol}`,
+          );
+          return {
+            company: item.company,
+            symbol,
+            currentPrice: null,
+            priceFormatted: '—',
+            changeFormatted: '—',
+            changePercent: 0,
+            marketCap: '—',
+            peRatio: '—',
+          };
+        }
+
+        // 其它市場正常走 Finnhub
+        const stockData = await getStocksDetails(symbol);
 
         if (!stockData) {
-          console.warn(`Failed to fetch data for ${item.symbol}`);
-          return item;
+          console.warn(`Failed to fetch data for ${symbol}`);
+          return {
+            company: item.company,
+            symbol,
+            currentPrice: null,
+            priceFormatted: '—',
+            changeFormatted: '—',
+            changePercent: 0,
+            marketCap: '—',
+            peRatio: '—',
+          };
         }
 
         return {
