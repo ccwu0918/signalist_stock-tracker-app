@@ -4,8 +4,6 @@ import { formatPrice, formatPercentage } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { InfoIcon } from 'lucide-react';
 import WatchlistButton from '@/components/WatchlistButton';
 import InvestingWidget from '@/components/InvestingWidget';
 
@@ -56,13 +54,14 @@ export default async function StockPage({ params }: StockPageProps) {
       </div>
 
       {hasLimitedData && (
-        <Alert className="mb-6">
-          <InfoIcon className="h-4 w-4" />
-          <AlertDescription>
-            Limited data for {upperSymbol}. Finnhub does not provide fundamentals for this symbol on your current plan,
-            but charts are provided by Investing.com for Taiwan stocks.
-          </AlertDescription>
-        </Alert>
+        <Card className="mb-6 border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+          <CardContent className="pt-6">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              <strong>Limited data for {upperSymbol}.</strong> Finnhub does not provide fundamentals for this symbol on your current plan,
+              but charts are provided by Investing.com for Taiwan stocks.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
