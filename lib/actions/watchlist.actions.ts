@@ -4,6 +4,8 @@ import { connectToDatabase } from '@/database/mongoose';
 import { Watchlist } from '@/database/models/watchlist.model';
 
 // Add stock to watchlist
+// ✅ 新增這一行（路徑依你實際檔案位置調整）
+import { getStocksDetails } from '@/lib/actions/finnhub.actions';
 import { revalidatePath } from 'next/cache';
 import { auth } from '../better-auth/auth';
 import { headers } from 'next/headers';
