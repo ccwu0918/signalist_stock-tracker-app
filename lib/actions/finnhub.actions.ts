@@ -220,58 +220,74 @@ export const searchStocks = cache(
 export const getStocksDetails = cache(async (symbol: string) => {
   const cleanSymbol = symbol.trim().toUpperCase();
 
-  // ✅ 統一用 token 變數（跟 getNews / searchStocks 一樣）
-  const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
-  if (!token) {
-    throw new Error('FINNHUB API key is not configured');
-  }
-  // console.log(
-  //  'Finnhub token in getStocksDetails:',
-  //  process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY
-  //);
+  if (cleanSymbol.endsWith('.TW')) {
+    // 走另一個 provider 的 fetch
+      console.warn(`Failed to fetch data for ${cleanSymbol}`);
+  } else {
+      // 用 Finnhub
 
-  try {
-    const [quote, profile, financials] = await Promise.all([
-      fetchJSON(
-        `${FINNHUB_BASE_URL}/quote?symbol=${cleanSymbol}&token=${token}`
-      ),
-      fetchJSON(
-        `${FINNHUB_BASE_URL}/stock/profile2?symbol=${cleanSymbol}&token=${token}`,
-        3600
-      ),
-      fetchJSON(
-        `${FINNHUB_BASE_URL}/stock/metric?symbol=${cleanSymbol}&metric=all&token=${token}`,
-        1800
-      ),
-    ]);
+    // ✅ 統一用 token 變數（跟 getNews / searchStocks 一樣）
+    const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+    if (!token) {
+      throw new Error('FINNHUB API key is not configured');
+    }
+    // console.log(
+    //  'Finnhub token in getStocksDetails:',
+    //  process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY
+    //);
+
+    try {
+      const [quote, profile, financials] = await Promise.all([
+        fetchJSON(
+          `${FINNHUB_BASE_URL}/quote?symbol=${cleanSymbol}&token=${token}`
+        ),
+        fetchJSON(
+          `${FINNHUB_BASE_URL}/stock/profile2?symbol=${cleanSymbol}&token=${token}`,
+          3600
+        ),
+        fetchJSON(
+          `${FINNHUB_BASE_URL}/stock/metric?symbol=${cleanSymbol}&metric=all&token=${token}`,
+          1800
+        ),
+      ]);
 
 
-    // Type cast the responses
-    const quoteData = quote as QuoteData;
-    const profileData = profile as ProfileData;
-    const financialsData = financials as FinancialsData;
+      // Type cast the responses
+      const quoteData = quote as QuoteData;
+      const profileData = profile as ProfileData;
+      const financialsData = financials as FinancialsData;
 
-    // Check if we got valid quote and profile data
-    if (!quoteData?.c || !profileData?.name)
-      throw new Error('Invalid stock data received from API');
+      // Check if we got valid quote and profile data
+      if (!quoteData?.c || !profileData?.name)
+        throw new Error('Invalid stock data received from API');
 
-    const changePercent = quoteData.dp || 0;
-    const peRatio = financialsData?.metric?.peNormalizedAnnual || null;
+      const changePercent = quoteData.dp || 0;
+      const peRatio = financialsData?.metric?.peNormalizedAnnual || null;
 
-    return {
-      symbol: cleanSymbol,
-      company: profileData?.name,
-      currentPrice: quoteData.c,
-      changePercent,
-      priceFormatted: formatPrice(quoteData.c),
-      changeFormatted: formatChangePercent(changePercent),
-      peRatio: peRatio?.toFixed(1) || '—',
-      marketCapFormatted: formatMarketCapValue(
-        profileData?.marketCapitalization || 0
-      ),
-    };
-  } catch (error) {
-    console.error(`Error fetching details for ${cleanSymbol}:`, error);
-    throw new Error('Failed to fetch stock details');
+      return {
+        symbol: cleanSymbol,
+        company: profileData?.name,
+        currentPrice: quoteData.c,
+        changePercent,
+        priceFormatted: formatPrice(quoteData.c),
+        changeFormatted: formatChangePercent(changePercent),
+        peRatio: peRatio?.toFixed(1) || '—',
+        marketCapFormatted: formatMarketCapValue(
+          profileData?.marketCapitalization || 0
+        ),
+      };
+    } catch (error) {
+    // 如果是 Finnhub 回的 403，就只 log，不整個 throw
+      if (
+        error instanceof Error &&
+        /403/.test(error.message) &&
+        /You don't have access to this resource/.test(error.message)
+      ) {
+        console.warn(`No access to data for ${cleanSymbol} on current plan.`);
+        return null; // 讓呼叫端決定怎麼顯示
+      }      
+      console.error(`Error fetching details for ${cleanSymbol}:`, error);
+      throw new Error('Failed to fetch stock details');
+    }
   }
 });
