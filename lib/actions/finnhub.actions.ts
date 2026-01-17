@@ -1,6 +1,13 @@
 'use server';
 
-import { getDateRange, validateArticle, formatArticle } from '@/lib/utils';
+import {
+  getDateRange,
+  validateArticle,
+  formatArticle,
+  formatPrice,
+  formatChangePercent,
+  formatMarketCapValue,
+} from '@/lib/utils';
 import { POPULAR_STOCK_SYMBOLS } from '@/lib/constants';
 import { cache } from 'react';
 
