@@ -10,7 +10,8 @@ import {
 } from '@/components/ui/table';
 import { WATCHLIST_TABLE_HEADER } from '@/lib/constants';
 import { Button } from './ui/button';
-import { WatchlistButton } from './WatchlistButton';
+// import { WatchlistButton } from './WatchlistButton';
+import WatchlistButton from './WatchlistButton';
 import { useRouter } from 'next/navigation';
 import { cn, getChangeColorClass } from '@/lib/utils';
 
