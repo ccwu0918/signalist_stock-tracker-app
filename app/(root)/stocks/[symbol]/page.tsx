@@ -15,9 +15,10 @@ import {
 function getTradingViewSymbol(raw: string) {
   const symbol = raw.toUpperCase().trim();
 
+  // ✅ 台股：0052.TW -> TWSE:0052 (使用冒號)
   if (symbol.endsWith('.TW')) {
     const base = symbol.replace('.TW', '');
-    return `TWSE-${base}`; // ✅ TradingView 用 TWSE-2330
+    return `TWSE:${base}`;
   }
 
   return symbol;
@@ -25,8 +26,8 @@ function getTradingViewSymbol(raw: string) {
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
   const { symbol } = params;
-  const upperSymbol = symbol.toUpperCase();           // 例如 2330.TW
-  const tvSymbol = getTradingViewSymbol(upperSymbol); // 例如 TWSE-2330
+  const upperSymbol = symbol.toUpperCase();           // 例如 0052.TW
+  const tvSymbol = getTradingViewSymbol(upperSymbol); // 例如 TWSE:0052
   const scriptUrl =
     'https://s3.tradingview.com/external-embedding/embed-widget-';
 
