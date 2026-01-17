@@ -2,6 +2,11 @@ import { notFound } from 'next/navigation';
 import { WatchlistItem } from '@/database/models/watchlist.model';
 import TradingViewWidget from '@/components/TradingViewWidget';
 import WatchlistButton from '@/components/WatchlistButton';
+
+// ✅ 這兩行很重要，一定要存在
+import { getStocksDetails } from '@/lib/actions/finnhub.actions';
+import { getUserWatchlist } from '@/lib/actions/watchlist.actions';
+
 import {
   SYMBOL_INFO_WIDGET_CONFIG,
   CANDLE_CHART_WIDGET_CONFIG,
@@ -12,7 +17,7 @@ import {
 } from '@/lib/constants';
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
-  const { symbol } = params; // 這裡不用 await
+  const { symbol } = params;
   const upperSymbol = symbol.toUpperCase();
   const scriptUrl = `https://s3.tradingview.com/external-embedding/embed-widget-`;
 
@@ -20,10 +25,10 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
   const watchlist = await getUserWatchlist();
 
   const isInWatchlist = watchlist.some(
-    (item: WatchlistItem) => item.symbol === upperSymbol
+    (item: WatchlistItem) => item.symbol === upperSymbol,
   );
 
-  // ✅ 不再直接 notFound，而是顯示「無法取得數據」畫面
+  // 無資料時的 fallback 畫面
   if (!stockData) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
@@ -49,7 +54,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
     );
   }
 
-  // ✅ 有資料時，維持原本完整詳情頁
+  // 有資料時顯示完整詳情頁
   return (
     <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
