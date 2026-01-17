@@ -14,20 +14,24 @@ import {
 
 function getTradingViewSymbol(raw: string) {
   const symbol = raw.toUpperCase().trim();
+
   if (symbol.endsWith('.TW')) {
-    return symbol.replace('.TW', '');
+    const base = symbol.replace('.TW', '');
+    return `TWSE-${base}`; // ✅ TradingView 用 TWSE-2330
   }
+
   return symbol;
 }
 
 export default async function StockDetails({ params }: StockDetailsPageProps) {
   const { symbol } = params;
-  const upperSymbol = symbol.toUpperCase();
-  const tvSymbol = getTradingViewSymbol(upperSymbol); // ✅ 專門給 TradingView 用
+  const upperSymbol = symbol.toUpperCase();           // 例如 2330.TW
+  const tvSymbol = getTradingViewSymbol(upperSymbol); // 例如 TWSE-2330
   const scriptUrl =
     'https://s3.tradingview.com/external-embedding/embed-widget-';
 
-  const stockData = await getStocksDetails(upperSymbol); // Finnhub 用完整 2330.TW
+  // Finnhub & DB 還是用完整 symbol
+  const stockData = await getStocksDetails(upperSymbol);
   const watchlist = await getUserWatchlist();
 
   const isInWatchlist = watchlist.some(
@@ -39,7 +43,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
   return (
     <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-        {/* Left column: TradingView charts – 使用 tvSymbol */}
+        {/* 左側：TradingView，一律用 tvSymbol */}
         <div className="flex flex-col gap-6">
           <TradingViewWidget
             scriptUrl={`${scriptUrl}symbol-info.js`}
@@ -62,7 +66,7 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
           />
         </div>
 
-        {/* Right column: watchlist + fundamentals / fallback */}
+        {/* 右側：watchlist + 基本資料 / fallback */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <WatchlistButton
@@ -100,9 +104,9 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
               </h2>
               <p className="text-sm text-muted-foreground">
                 Finnhub does not provide fundamentals for this symbol on your
-                current plan, but the TradingView charts on the left use symbol{' '}
-                <span className="font-mono">{tvSymbol}</span> and should still
-                display normally.
+                current plan, but TradingView uses{' '}
+                <span className="font-mono">{tvSymbol}</span> and should
+                still display charts correctly.
               </p>
             </div>
           )}
