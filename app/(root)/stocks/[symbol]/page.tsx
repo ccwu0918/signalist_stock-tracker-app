@@ -96,4 +96,8 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
               </p>
             </div>
           )}
-        </di
+        </div>
+      </section>
+    </div>
+  );
+}
