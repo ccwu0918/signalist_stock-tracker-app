@@ -12,13 +12,22 @@ import {
   COMPANY_FINANCIALS_WIDGET_CONFIG,
 } from '@/lib/constants';
 
+function getTradingViewSymbol(raw: string) {
+  const symbol = raw.toUpperCase().trim();
+  if (symbol.endsWith('.TW')) {
+    return symbol.replace('.TW', '');
+  }
+  return symbol;
+}
+
 export default async function StockDetails({ params }: StockDetailsPageProps) {
   const { symbol } = params;
   const upperSymbol = symbol.toUpperCase();
+  const tvSymbol = getTradingViewSymbol(upperSymbol); // ✅ 專門給 TradingView 用
   const scriptUrl =
     'https://s3.tradingview.com/external-embedding/embed-widget-';
 
-  const stockData = await getStocksDetails(upperSymbol);
+  const stockData = await getStocksDetails(upperSymbol); // Finnhub 用完整 2330.TW
   const watchlist = await getUserWatchlist();
 
   const isInWatchlist = watchlist.some(
@@ -30,24 +39,24 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
   return (
     <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
       <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
-        {/* Left column: TradingView charts & info – always rendered */}
+        {/* Left column: TradingView charts – 使用 tvSymbol */}
         <div className="flex flex-col gap-6">
           <TradingViewWidget
             scriptUrl={`${scriptUrl}symbol-info.js`}
-            config={SYMBOL_INFO_WIDGET_CONFIG(upperSymbol)}
+            config={SYMBOL_INFO_WIDGET_CONFIG(tvSymbol)}
             height={170}
           />
 
           <TradingViewWidget
             scriptUrl={`${scriptUrl}advanced-chart.js`}
-            config={CANDLE_CHART_WIDGET_CONFIG(upperSymbol)}
+            config={CANDLE_CHART_WIDGET_CONFIG(tvSymbol)}
             className="custom-chart"
             height={600}
           />
 
           <TradingViewWidget
             scriptUrl={`${scriptUrl}advanced-chart.js`}
-            config={BASELINE_WIDGET_CONFIG(upperSymbol)}
+            config={BASELINE_WIDGET_CONFIG(tvSymbol)}
             className="custom-chart"
             height={600}
           />
@@ -68,19 +77,19 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
             <>
               <TradingViewWidget
                 scriptUrl={`${scriptUrl}technical-analysis.js`}
-                config={TECHNICAL_ANALYSIS_WIDGET_CONFIG(upperSymbol)}
+                config={TECHNICAL_ANALYSIS_WIDGET_CONFIG(tvSymbol)}
                 height={400}
               />
 
               <TradingViewWidget
                 scriptUrl={`${scriptUrl}company-profile.js`}
-                config={COMPANY_PROFILE_WIDGET_CONFIG(upperSymbol)}
+                config={COMPANY_PROFILE_WIDGET_CONFIG(tvSymbol)}
                 height={440}
               />
 
               <TradingViewWidget
                 scriptUrl={`${scriptUrl}financials.js`}
-                config={COMPANY_FINANCIALS_WIDGET_CONFIG(upperSymbol)}
+                config={COMPANY_FINANCIALS_WIDGET_CONFIG(tvSymbol)}
                 height={464}
               />
             </>
@@ -91,8 +100,9 @@ export default async function StockDetails({ params }: StockDetailsPageProps) {
               </h2>
               <p className="text-sm text-muted-foreground">
                 Finnhub does not provide fundamentals for this symbol on your
-                current plan, but the TradingView charts on the left should
-                still display normally.
+                current plan, but the TradingView charts on the left use symbol{' '}
+                <span className="font-mono">{tvSymbol}</span> and should still
+                display normally.
               </p>
             </div>
           )}
