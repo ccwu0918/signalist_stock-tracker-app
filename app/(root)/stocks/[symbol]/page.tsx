@@ -1,122 +1,141 @@
-import { Suspense } from 'react';
-import { getStockDetails } from '@/lib/actions/finnhub';
-import { formatPrice, formatPercentage } from '@/lib/utils';
+import { WatchlistItem } from '@/database/models/watchlist.model';
+import TradingViewWidget from '@/components/TradingViewWidget';
+import YahooFinanceChart from '@/components/YahooFinanceChart';
 import WatchlistButton from '@/components/WatchlistButton';
-import InvestingWidget from '@/components/InvestingWidget';
+import { getStocksDetails } from '@/lib/actions/finnhub.actions';
+import { getUserWatchlist } from '@/lib/actions/watchlist.actions';
+import {
+  SYMBOL_INFO_WIDGET_CONFIG,
+  TECHNICAL_ANALYSIS_WIDGET_CONFIG,
+  COMPANY_PROFILE_WIDGET_CONFIG,
+  COMPANY_FINANCIALS_WIDGET_CONFIG,
+} from '@/lib/constants';
 
-export const dynamic = 'force-dynamic';
-
-interface StockPageProps {
-  params: Promise<{ symbol: string }>;
+function getTradingViewSymbol(raw: string) {
+  const symbol = raw.toUpperCase().trim();
+  if (symbol.endsWith('.TW')) {
+    const base = symbol.replace('.TW', '');
+    return `TWSE:${base}`;
+  }
+  return symbol;
 }
 
-export default async function StockPage({ params }: StockPageProps) {
-  const { symbol: rawSymbol } = await params;
-  const symbol = decodeURIComponent(rawSymbol);
+export default async function StockDetails({ 
+  params 
+}: { 
+  params: Promise<{ symbol: string }> 
+}) {
+  const { symbol } = await params;
   const upperSymbol = symbol.toUpperCase();
-
-  const stockData = await getStockDetails(upperSymbol);
-
   const isTaiwanStock = upperSymbol.endsWith('.TW');
-  const hasLimitedData = isTaiwanStock && (!stockData.marketCap || !stockData.peRatio);
+  const tvSymbol = getTradingViewSymbol(upperSymbol);
+  const scriptUrl = 'https://s3.tradingview.com/external-embedding/embed-widget-';
+
+  const stockData = await getStocksDetails(upperSymbol);
+  const watchlist = await getUserWatchlist();
+
+  const isInWatchlist = watchlist.some(
+    (item: WatchlistItem) => item.symbol === upperSymbol
+  );
+
+  const hasData = Boolean(stockData);
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-4xl font-bold">{upperSymbol}</h1>
-            <WatchlistButton symbol={upperSymbol} />
-          </div>
-          {stockData.name && (
-            <p className="text-muted-foreground text-lg">{stockData.name}</p>
-          )}
-          {stockData.exchange && (
-            <span className="inline-block bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm mt-2">
-              {stockData.exchange}
-            </span>
-          )}
-        </div>
-        <div className="text-right">
-          <div className="text-4xl font-bold">
-            {formatPrice(stockData.currentPrice)}
-          </div>
-          {stockData.change !== null && stockData.percentChange !== null && (
-            <div className={`text-lg ${stockData.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {stockData.change >= 0 ? '+' : ''}{formatPrice(stockData.change)} (
-              {formatPercentage(stockData.percentChange)})
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="flex min-h-screen p-4 md:p-6 lg:p-8">
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+        {/* 左側：圖表 */}
+        <div className="flex flex-col gap-6">
+          {/* Symbol Info - TradingView 對所有市場都支援 */}
+          <TradingViewWidget
+            scriptUrl={`${scriptUrl}symbol-info.js`}
+            config={SYMBOL_INFO_WIDGET_CONFIG(tvSymbol)}
+            height={170}
+          />
 
-      {hasLimitedData && (
-        <div className="mb-6 border border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950 rounded-lg p-4">
-          <p className="text-sm text-blue-900 dark:text-blue-100">
-            <strong>Limited data for {upperSymbol}.</strong> Finnhub does not provide fundamentals for this symbol on your current plan,
-            but charts are provided by Investing.com for Taiwan stocks.
-          </p>
-        </div>
-      )}
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        {stockData.previousClose !== null && (
-          <div className="border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground mb-2">Previous Close</p>
-            <p className="text-2xl font-bold">{formatPrice(stockData.previousClose)}</p>
-          </div>
-        )}
-        {stockData.open !== null && (
-          <div className="border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground mb-2">Open</p>
-            <p className="text-2xl font-bold">{formatPrice(stockData.open)}</p>
-          </div>
-        )}
-        {stockData.high !== null && (
-          <div className="border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground mb-2">Day High</p>
-            <p className="text-2xl font-bold">{formatPrice(stockData.high)}</p>
-          </div>
-        )}
-        {stockData.low !== null && (
-          <div className="border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground mb-2">Day Low</p>
-            <p className="text-2xl font-bold">{formatPrice(stockData.low)}</p>
-          </div>
-        )}
-      </div>
-
-      <div className="border rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-bold mb-4">Price Chart</h2>
-        <Suspense fallback={
-          <div className="w-full h-[500px] bg-muted rounded-lg animate-pulse" />
-        }>
+          {/* 主要圖表：台股用 Yahoo Finance，其他用 TradingView */}
           {isTaiwanStock ? (
-            <InvestingWidget symbol={upperSymbol} />
+            <>
+              <YahooFinanceChart symbol={upperSymbol} height={600} />
+              <div className="border rounded-lg p-4 bg-gray-900">
+                <p className="text-sm text-gray-400">
+                  台股圖表由 Yahoo Finance 提供。
+                  <a 
+                    href={`https://finance.yahoo.com/quote/${upperSymbol}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline ml-1"
+                  >
+                    查看完整資料 →
+                  </a>
+                </p>
+              </div>
+            </>
           ) : (
-            <div className="text-center p-6 text-muted-foreground">
-              Chart widget for non-Taiwan stocks coming soon
-            </div>
+            <>
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}advanced-chart.js`}
+                config={{
+                  ...CANDLE_CHART_WIDGET_CONFIG(tvSymbol),
+                  symbol: tvSymbol,
+                }}
+                className="custom-chart"
+                height={600}
+              />
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}advanced-chart.js`}
+                config={{
+                  ...BASELINE_WIDGET_CONFIG(tvSymbol),
+                  symbol: tvSymbol,
+                }}
+                className="custom-chart"
+                height={600}
+              />
+            </>
           )}
-        </Suspense>
-      </div>
+        </div>
 
-      {(stockData.marketCap || stockData.peRatio) && (
-        <div className="grid gap-6 md:grid-cols-2">
-          {stockData.marketCap && (
-            <div className="border rounded-lg p-4">
-              <p className="text-sm text-muted-foreground mb-2">Market Cap</p>
-              <p className="text-2xl font-bold">{formatPrice(stockData.marketCap)}</p>
-            </div>
-          )}
-          {stockData.peRatio && (
-            <div className="border rounded-lg p-4">
-              <p className="text-sm text-muted-foreground mb-2">P/E Ratio</p>
-              <p className="text-2xl font-bold">{stockData.peRatio.toFixed(2)}</p>
+        {/* 右側 */}
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center justify-between">
+            <WatchlistButton
+              symbol={upperSymbol}
+              company={stockData?.company ?? upperSymbol}
+              isInWatchlist={isInWatchlist}
+              type="button"
+            />
+          </div>
+
+          {hasData ? (
+            <>
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}technical-analysis.js`}
+                config={TECHNICAL_ANALYSIS_WIDGET_CONFIG(tvSymbol)}
+                height={400}
+              />
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}company-profile.js`}
+                config={COMPANY_PROFILE_WIDGET_CONFIG(tvSymbol)}
+                height={440}
+              />
+              <TradingViewWidget
+                scriptUrl={`${scriptUrl}financials.js`}
+                config={COMPANY_FINANCIALS_WIDGET_CONFIG(tvSymbol)}
+                height={464}
+              />
+            </>
+          ) : (
+            <div className="border rounded-lg p-4 space-y-2">
+              <h2 className="text-lg font-semibold">
+                Limited data for {upperSymbol}
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Finnhub does not provide fundamentals for this symbol on your
+                current plan. 圖表資料由 {isTaiwanStock ? 'Yahoo Finance' : 'TradingView'} 提供。
+              </p>
             </div>
           )}
         </div>
-      )}
+      </section>
     </div>
   );
 }
