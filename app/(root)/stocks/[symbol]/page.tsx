@@ -18,6 +18,8 @@ function getTradingViewSymbol(raw: string) {
   // ✅ 台股：0052.TW -> TWSE:0052 (使用冒號)
   if (symbol.endsWith('.TW')) {
     const base = symbol.replace('.TW', '');
+    console.log('upperSymbol:', upperSymbol);  // 應該是 0052.TW
+    console.log('tvSymbol:', tvSymbol);        // 應該是 TWSE:0052
     return `TWSE:${base}`;
   }
 
