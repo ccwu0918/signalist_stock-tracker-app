@@ -213,23 +213,28 @@ export const searchStocks = cache(
 export const getStocksDetails = cache(async (symbol: string) => {
   const cleanSymbol = symbol.trim().toUpperCase();
 
+  // ✅ 統一用 token 變數（跟 getNews / searchStocks 一樣）
+  const token = process.env.FINNHUB_API_KEY ?? NEXT_PUBLIC_FINNHUB_API_KEY;
+  if (!token) {
+    throw new Error('FINNHUB API key is not configured');
+  }
+  console.log('Finnhub token in getStocksDetails:', NEXT_PUBLIC_FINNHUB_API_KEY);
+
   try {
     const [quote, profile, financials] = await Promise.all([
       fetchJSON(
-        // Price data - no caching for accuracy
-        `${FINNHUB_BASE_URL}/quote?symbol=${cleanSymbol}&token=${NEXT_PUBLIC_FINNHUB_API_KEY}`
+        `${FINNHUB_BASE_URL}/quote?symbol=${cleanSymbol}&token=${token}`
       ),
       fetchJSON(
-        // Company info - cache 1hr (rarely changes)
-        `${FINNHUB_BASE_URL}/stock/profile2?symbol=${cleanSymbol}&token=${NEXT_PUBLIC_FINNHUB_API_KEY}`,
+        `${FINNHUB_BASE_URL}/stock/profile2?symbol=${cleanSymbol}&token=${token}`,
         3600
       ),
       fetchJSON(
-        // Financial metrics (P/E, etc.) - cache 30min
-        `${FINNHUB_BASE_URL}/stock/metric?symbol=${cleanSymbol}&metric=all&token=${NEXT_PUBLIC_FINNHUB_API_KEY}`,
+        `${FINNHUB_BASE_URL}/stock/metric?symbol=${cleanSymbol}&metric=all&token=${token}`,
         1800
       ),
     ]);
+
 
     // Type cast the responses
     const quoteData = quote as QuoteData;
